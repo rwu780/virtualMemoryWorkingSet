@@ -1,4 +1,7 @@
 #include "simulator.h"
+#define SIZE 30
+
+struct HashItem* hashArray[SIZE];
 
 unsigned int PSIZE;
 unsigned int COUNT;
@@ -37,7 +40,7 @@ void put(unsigned int address, unsigned int value) {
 	unsigned int key = address >> 7;
 
 	//printf("In Put key:%d offset: %d\n", key, offset);
-//	unsigned int refrencedPage;
+	//	unsigned int refrencedPage;
 	struct HashItem* item = search(key);
 	//printf("Done search key\n");
 	if(item == NULL) {
@@ -175,5 +178,23 @@ void addToResult(){
 		RESULT = result;
 	}
 	RESULT[RESULT_INDEX++] = WINDOW_INDEX;
+}
+
+
+unsigned int hash(unsigned int key) {
+	return key % SIZE;
+}
+
+struct HashItem *search(unsigned int key) {
+	int hashIndex = hash(key);
+	return hashArray[hashIndex];
+}
+
+void insert(unsigned int key, struct Page* page) {
+	struct HashItem *item = (struct HashItem*) malloc(sizeof(struct HashItem));
+	item->key = key;
+	item->page = page;
+	int hashIndex = hash(key);
+	hashArray[hashIndex] = item;
 }
 
