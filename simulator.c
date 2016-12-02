@@ -28,17 +28,20 @@ void init(int psize, int winsize) {
 	for(i = 0; i < WINSIZE; i++) WINDOW_REFERENCE[i] = -1;
 	for(i = 0; i < TOTAL_SIZE; i++) TOTAL_REFERENCE[i] = -1;
 	for(i = 0; i < RESULT_SIZE; i++) RESULT[i] = -1;
+
 }
 
-void put(unsigned int address, int value) {
+void put(unsigned int address, unsigned int value) {
+	//printf("Enter put\n");
 	unsigned int offset = address & 0x7F;
 	unsigned int key = address >> 7;
 
 	//printf("In Put key:%d offset: %d\n", key, offset);
-
-	unsigned int refrencedPage;
+//	unsigned int refrencedPage;
 	struct HashItem* item = search(key);
+	//printf("Done search key\n");
 	if(item == NULL) {
+		//printf("Enter if\n");
 		struct Page *page = (struct Page*) malloc(sizeof(struct Page));
 		page->pn = key;
 		page->addr = (int*) malloc(WORDSIZE * PSIZE);
@@ -48,12 +51,31 @@ void put(unsigned int address, int value) {
 		TOTAL_REFERENCE[TOTAL_INDEX++] = page->pn;
 		WINDOW_REFERENCE[WINDOW_INDEX++] = page->pn;
 	} else {
-		int* addr = item->page->addr;
-		*(addr + offset) = value;
-		checkTotalReference(item->page->pn);
-		checkWindowReference(item->page->pn);
+		struct Page *page = item->page;
+		while(page->pn != key && page->next != NULL){
+			page = page->next;
+		}
+		if(page->next == NULL && page->pn != key){
+			struct Page *newPage = (struct Page*) malloc(sizeof(struct Page));
+			newPage->pn = key;
+			newPage->addr = (int*) malloc(WORDSIZE * PSIZE);
+			newPage->next = NULL;
+			*(newPage->addr + offset) = value;
+			page->next = newPage;
+			TOTAL_REFERENCE[TOTAL_INDEX++] = newPage->pn;
+			WINDOW_REFERENCE[WINDOW_INDEX++] = newPage->pn;
+
+		}
+		else{
+
+			int* addr = item->page->addr;
+			*(addr + offset) = value;
+			checkTotalReference(item->page->pn);
+			checkWindowReference(item->page->pn);
+		}
 	}
 	if(++COUNT % WINSIZE == 0) {
+		//printf("Enter clear\n");
 		addToResult();
 		WINDOW_INDEX = 0;
 		int i;
@@ -61,7 +83,7 @@ void put(unsigned int address, int value) {
 	}
 }
 
-int get(unsigned int address) {
+unsigned int get(unsigned int address) {
 	unsigned int offset = address & 0x7F;
 	unsigned int key = address >> 7;
 
@@ -89,9 +111,14 @@ void done() {
 			printf("Window %d has WSS: %d\n", i+1, RESULT[i]);
 		}
 	}
+	free(WINDOW_REFERENCE);
+	free(TOTAL_REFERENCE);
+	free(RESULT);
 
 	printf("Total page referenced: %d\n", TOTAL_INDEX);
 	printf("Average: %f\n", TOTAL_INDEX * 1.0 / (COUNT * 1.0));
+	printf("COUNT: %d\n", COUNT);
+
 
 	exit(0);
 }
@@ -145,7 +172,6 @@ void addToResult(){
 				result[i] = RESULT[i];
 			}
 		}
-		free(RESULT);
 		RESULT = result;
 	}
 	RESULT[RESULT_INDEX++] = WINDOW_INDEX;

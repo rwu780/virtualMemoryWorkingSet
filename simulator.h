@@ -6,9 +6,9 @@
 
 void init(int psize, int winsize);
 
-void put(unsigned int address, int value);
+void put(unsigned int address, unsigned int value);
 
-int get(unsigned int address);
+unsigned int get(unsigned int address);
 
 void done();
 

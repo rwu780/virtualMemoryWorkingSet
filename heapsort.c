@@ -1,64 +1,62 @@
-#include "heapsort.h"
+#include <stdio.h>
+#include <stdlib.h>
+#define SIZE 100000
 
-int main()
+void max_heapify(int start, int end);
+void heap_sort(int size);
+void swap(int index1, int index2);
+
+int main(int argc, char const *argv[])
 {
-    int N;
-    printf("Enter a value: ");
-    scanf("%d", &N);
-    init(128, 1000);
+    int pSize = atoi(argv[1]);
+    int wSize = atoi(argv[2]);
+
+    init(pSize, wSize);
 
     int i;
-    for(i = 0; i<N; i++){
+    for(i = 0; i<SIZE; i++){
         unsigned int ran = (unsigned int)lrand48();
         put(i,ran);
     }
-    display(N);
-
-    heapsort(N);
-    display(N);
+    heap_sort(SIZE);
     done();
     return 0;
 }
+
 void swap(int index1, int index2){
     unsigned int temp = get(index1);
     put(index1, get(index2));
     put(index2, temp);
 }
-void buildHeap(int size){
-    int i;
-    for(i=1; i<size; i++){
-        unsigned int value = get(i);
-        int currentNode = i;
-        int parentNode = (i-1)/2;
 
-        while(currentNode>0 && value > get(parentNode)){
-            swap(parentNode, currentNode);
-            currentNode = parentNode;
-            parentNode = (parentNode-1)/2;
+void max_heapify(int start, int end){
+    
+    int parent = start;
+    int son = parent*2 + 1;
+
+    while(son <= end){
+        if((son+1) <= end && get(son)<get(son+1)){
+            son++;
+        }
+        if(get(parent)>get(son)){
+            return;
+        }
+        else{
+            swap(parent, son);
+            parent = son;
+            son = parent*2 +1;
         }
     }
 }
 
-void heapsort(int size){
-    buildHeap(size);
-    swap(0, size-1);
-    if(size >1){
-        heapsort(size-1);
-    }
-}
-
-/**
-Print out the current data, require two inputs
-1. array
-2. array size
-**/
-void display(int size) {
-
-    printf("==========\n");
+void heap_sort(int size){
     int i;
-    // navigate through all items 
-    for(i = 0;i<size;i++) {
-        printf("%d: %d \n",i+1, get(i));
+    for(i = size/2 - 1; i>=0;i--){
+        max_heapify(i, size-1);
     }
-    printf("==========\n");
+    for(i = size-1;i>0;i--){
+        swap(0,i);
+        max_heapify(0, i-1);
+    }
 }
+

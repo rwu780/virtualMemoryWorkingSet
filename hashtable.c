@@ -8,15 +8,18 @@ unsigned int hash(unsigned int key) {
 }
 
 struct HashItem *search(unsigned int key) {
+	//printf("search key\n");
 	unsigned int hashIndex = hash(key);
-	while(hashArray[hashIndex] != NULL) {
-		if(hashArray[hashIndex]->key == key) {
-			return hashArray[hashIndex];
-		}
-		hashIndex++;
-		hashIndex %= SIZE;
-	}
-	return NULL;
+	return hashArray[hashIndex];
+	// while(hashArray[hashIndex] != NULL) {
+	// 	printf("key %d\n", key);
+	// 	if(hashArray[hashIndex]->key == key) {
+	// 		return hashArray[hashIndex];
+	// 	}
+	// 	hashIndex++;
+	// 	hashIndex %= SIZE;
+	// }
+	// return NULL;
 }
 
 void insert(unsigned int key, struct Page* page) {
@@ -25,11 +28,6 @@ void insert(unsigned int key, struct Page* page) {
 	item->page = page;
 
 	int hashIndex = hash(key);
-
-	while(hashArray[hashIndex] != NULL && hashArray[hashIndex]->key != key) {
-		hashIndex++;
-		hashIndex %= SIZE;
-	}
 	hashArray[hashIndex] = item;
 }
 
