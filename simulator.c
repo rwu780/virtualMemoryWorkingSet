@@ -1,50 +1,50 @@
 #include "simulator.h"
 #define SIZE 30
 
+//Hash Table
 struct HashItem* hashArray[SIZE];
 
-unsigned int PSIZE;
-unsigned int COUNT;
-unsigned int WINSIZE;
+//total reference
 int *TOTAL_REFERENCE;
 unsigned int TOTAL_SIZE;
 unsigned int TOTAL_INDEX;
+
+//Window size and reference
 int *WINDOW_REFERENCE;
+unsigned int WINSIZE;
 unsigned int WINDOW_INDEX;
-unsigned int *RESULT;
+
+//record the number of working set for window
+int *RESULT;
 unsigned int RESULT_SIZE;
 unsigned int RESULT_INDEX;
+
+unsigned int PSIZE;
+unsigned int COUNT;
+
 
 void init(int psize, int winsize) {
 	PSIZE = psize;
 	WINSIZE = winsize;
-	COUNT = 0;
 	TOTAL_SIZE = WINSIZE;
+
+	COUNT = 0;
 	RESULT_SIZE = 10;
+	
 	WINDOW_INDEX = 0;
 	TOTAL_INDEX = 0;
 	RESULT_INDEX = 0;
-	WINDOW_REFERENCE = (int*) malloc(sizeof(int) * WINSIZE);
-	TOTAL_REFERENCE = (int*) malloc(sizeof(int) * TOTAL_SIZE);
-	RESULT = (unsigned int*) malloc(sizeof(unsigned int) * RESULT_SIZE);
-	int i;
-	for(i = 0; i < WINSIZE; i++) WINDOW_REFERENCE[i] = -1;
-	for(i = 0; i < TOTAL_SIZE; i++) TOTAL_REFERENCE[i] = -1;
-	for(i = 0; i < RESULT_SIZE; i++) RESULT[i] = -1;
 
+	resetReferenceArrays(WINSIZE, TOTAL_SIZE);
+	resetResultArray(RESULT_SIZE);
 }
 
 void put(unsigned int address, unsigned int value) {
-	//printf("Enter put\n");
 	unsigned int offset = address & 0x7F;
 	unsigned int key = address >> 7;
 
-	//printf("In Put key:%d offset: %d\n", key, offset);
-	//	unsigned int refrencedPage;
 	struct HashItem* item = search(key);
-	//printf("Done search key\n");
 	if(item == NULL) {
-		//printf("Enter if\n");
 		struct Page *page = (struct Page*) malloc(sizeof(struct Page));
 		page->pn = key;
 		page->addr = (int*) malloc(WORDSIZE * PSIZE);
@@ -67,10 +67,8 @@ void put(unsigned int address, unsigned int value) {
 			page->next = newPage;
 			TOTAL_REFERENCE[TOTAL_INDEX++] = newPage->pn;
 			WINDOW_REFERENCE[WINDOW_INDEX++] = newPage->pn;
-
 		}
 		else{
-
 			int* addr = item->page->addr;
 			*(addr + offset) = value;
 			checkTotalReference(item->page->pn);
@@ -78,7 +76,6 @@ void put(unsigned int address, unsigned int value) {
 		}
 	}
 	if(++COUNT % WINSIZE == 0) {
-		//printf("Enter clear\n");
 		addToResult();
 		WINDOW_INDEX = 0;
 		int i;
@@ -89,8 +86,6 @@ void put(unsigned int address, unsigned int value) {
 unsigned int get(unsigned int address) {
 	unsigned int offset = address & 0x7F;
 	unsigned int key = address >> 7;
-
-	//printf("In Get key:%d offset: %d\n", key, offset);
 
 	struct HashItem* item = search(key);
 
@@ -107,7 +102,6 @@ unsigned int get(unsigned int address) {
 
 void done() {
 	addToResult();
-	//RESULT[RESULT_INDEX] = WINDOW_INDEX;
 	int i;
 	for(i = 0; i < RESULT_SIZE; i++) {
 		if(RESULT[i] != -1) {
@@ -121,7 +115,6 @@ void done() {
 	printf("Total page referenced: %d\n", TOTAL_INDEX);
 	printf("Average: %f\n", TOTAL_INDEX * 1.0 / (COUNT * 1.0));
 	printf("COUNT: %d\n", COUNT);
-
 
 	exit(0);
 }
@@ -192,9 +185,25 @@ struct HashItem *search(unsigned int key) {
 
 void insert(unsigned int key, struct Page* page) {
 	struct HashItem *item = (struct HashItem*) malloc(sizeof(struct HashItem));
-	item->key = key;
 	item->page = page;
 	int hashIndex = hash(key);
 	hashArray[hashIndex] = item;
 }
 
+void resetReferenceArrays(int winsize, int totalSize){
+	WINDOW_REFERENCE = (int*) malloc(sizeof(int) * winsize);
+	TOTAL_REFERENCE = (int*) malloc(sizeof(int) * totalSize);
+
+	int i;
+	for(i = 0; i<winsize; i++){
+		WINDOW_REFERENCE[i] = -1;
+		TOTAL_REFERENCE[i] = -1;
+	}
+}
+void resetResultArray(int resultSize){
+	RESULT = (unsigned int*) malloc(sizeof(unsigned int) * resultSize);
+	int i;
+	for(i = 0; i<resultSize; i++){
+		RESULT[i] = -1;
+	}
+}

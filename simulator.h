@@ -11,7 +11,6 @@ struct Page {
 };
 
 struct HashItem {
-	unsigned int key;
 	struct Page *page;
 };
 
@@ -34,3 +33,7 @@ void checkTotalReference(unsigned int key);
 void checkWindowReference(unsigned int key);
 
 void addToResult();
+
+void resetReferenceArrays(int winsize, int totalSize);
+void resetResultArray(int resultSize);
+
