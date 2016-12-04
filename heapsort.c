@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
-#define SIZE 100000
+#define SIZE 5000
 
 void max_heapify(int start, int end);
 void heap_sort(int size);

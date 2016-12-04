@@ -111,14 +111,22 @@ void done() {
 			printf("Window %d has WSS: %d\n", i+1, RESULT[i]);
 		}
 	}
-	free(WINDOW_REFERENCE);
-	free(TOTAL_REFERENCE);
-	free(RESULT);
+
 
 	printf("Total page referenced: %d\n", TOTAL_INDEX);
 	printf("Average: %f\n", TOTAL_INDEX * 1.0 / (COUNT * 1.0));
 	printf("COUNT: %d\n", COUNT);
 
+	free(WINDOW_REFERENCE);
+	free(TOTAL_REFERENCE);
+	free(RESULT);
+	for(i=0;i<SIZE;i++){
+		struct HashItem* item = search(i);
+		if(i != NULL){
+			free(item);
+		}
+	}
+	//free(hashArray);
 	exit(0);
 }
 
