@@ -40,8 +40,10 @@ void init(int psize, int winsize) {
 }
 
 void put(unsigned int address, unsigned int value) {
-	unsigned int offset = address & 0x7F;
-	unsigned int key = address >> 7;
+	unsigned int hex = PSIZE-1 + 0x00;
+	unsigned int offset = address & hex;
+	unsigned int key = address/PSIZE;
+
 
 	struct HashItem* item = search(key);
 	if(item == NULL) {
@@ -84,8 +86,9 @@ void put(unsigned int address, unsigned int value) {
 }
 
 unsigned int get(unsigned int address) {
-	unsigned int offset = address & 0x7F;
-	unsigned int key = address >> 7;
+	unsigned int hex = PSIZE-1 + 0x00;
+	unsigned int offset = address & hex;
+	unsigned int key = address/PSIZE;
 
 	struct HashItem* item = search(key);
 
