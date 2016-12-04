@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+
 #define SIZE 5000
 
 int parition(int begin, int end);
