@@ -6,11 +6,21 @@
 int parition(int begin, int end);
 void quicksort(int begin, int end);
 void swap(int left, int right);
+void process();
 
+int pSize;
+int wSize;
 int main(int argc, char const *argv[]){
 
-	int pSize = atoi(argv[1]);
-	int wSize = atoi(argv[2]);
+	pSize = atoi(argv[1]);
+	wSize = atoi(argv[2]);
+
+	process();
+	return 0;
+
+}
+
+void process(){
 
 	init(pSize, wSize);
 	int i;
@@ -23,7 +33,6 @@ int main(int argc, char const *argv[]){
 	quicksort(0, SIZE-1);
 	
 	done("quicksort");
-	return 0;
 }
 
 void quicksort(int begin, int end){

@@ -5,13 +5,20 @@
 void max_heapify(int start, int end);
 void heap_sort(int size);
 void swap(int index1, int index2);
+void process();
+int PSIZE;
+int WSIZE;
 
 int main(int argc, char const *argv[])
 {
-    int pSize = atoi(argv[1]);
-    int wSize = atoi(argv[2]);
+    PSIZE = atoi(argv[1]);
+    WSIZE = atoi(argv[2]);
+    process();
+    return 0;
+}
+void process(){
 
-    init(pSize, wSize);
+    init(PSIZE, WSIZE);
 
     int i;
     for(i = 0; i<SIZE; i++){
@@ -20,7 +27,6 @@ int main(int argc, char const *argv[])
     }
     heap_sort(SIZE);
     done("heapsort");
-    return 0;
 }
 
 void swap(int index1, int index2){
