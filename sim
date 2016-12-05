@@ -12,12 +12,12 @@ make clean
 if [ $sortAl = "quicksort" ]
 	then
 	make quicksort
-	./quicksort.out $pSize $wSize
+	./quicksort $pSize $wSize
 
 elif [ $sortAl = "heapsort" ]
 	then
 	make heapsort
-	./heapsort.out $pSize $wSize
+	./heapsort $pSize $wSize
 else
 	echo "Unknown Command"
 fi
