@@ -22,7 +22,7 @@ int main(int argc, char const *argv[]){
 
 	quicksort(0, SIZE-1);
 	
-	done();
+	done("quicksort");
 	return 0;
 }
 

@@ -8,6 +8,7 @@ echo page $pSize wSize $wSize soring al $sortAl
 
 make clean
 
+
 if [ $sortAl = "quicksort" ]
 	then
 	make quicksort

@@ -19,7 +19,7 @@ int main(int argc, char const *argv[])
         put(i,ran);
     }
     heap_sort(SIZE);
-    done();
+    done("heapsort");
     return 0;
 }
 

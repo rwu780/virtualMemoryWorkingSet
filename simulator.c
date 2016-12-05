@@ -1,7 +1,7 @@
 #include "simulator.h"
 #define SIZE 30
 
-//Hash Table
+//Hash Array
 struct HashItem* hashArray[SIZE];
 
 //total reference
@@ -9,7 +9,7 @@ int *TOTAL_REFERENCE;
 unsigned int TOTAL_SIZE;
 unsigned int TOTAL_INDEX;
 
-//Window size and reference
+//Window set and reference
 int *WINDOW_REFERENCE;
 unsigned int WINSIZE;
 unsigned int WINDOW_INDEX;
@@ -29,7 +29,7 @@ void init(int psize, int winsize) {
 	TOTAL_SIZE = WINSIZE;
 
 	COUNT = 0;
-	RESULT_SIZE = 10;
+	RESULT_SIZE = SIZE;
 	
 	WINDOW_INDEX = 0;
 	TOTAL_INDEX = 0;
@@ -44,9 +44,12 @@ void put(unsigned int address, unsigned int value) {
 	unsigned int offset = address & hex;
 	unsigned int key = address/PSIZE;
 
-
 	struct HashItem* item = search(key);
-	if(item == NULL) {
+	/*
+	If item is null
+	create a new page, create a hash map, and insert to hasharray
+	*/
+	if (item == NULL){
 		struct Page *page = (struct Page*) malloc(sizeof(struct Page));
 		page->pn = key;
 		page->addr = (int*) malloc(WORDSIZE * PSIZE);
@@ -55,12 +58,23 @@ void put(unsigned int address, unsigned int value) {
 		insert(key, page);
 		TOTAL_REFERENCE[TOTAL_INDEX++] = page->pn;
 		WINDOW_REFERENCE[WINDOW_INDEX++] = page->pn;
-	} else {
+	}
+	
+	if(item != NULL){
 		struct Page *page = item->page;
 		while(page->pn != key && page->next != NULL){
 			page = page->next;
 		}
-		if(page->next == NULL && page->pn != key){
+		//Only two situtation
+		//One: a key is found
+		//Two: no key is found
+		if(page->pn == key){
+			int* addr = item->page->addr;
+			*(addr + offset) = value;
+			checkTotalReference(page->pn);
+			checkWindowReference(page->pn);
+		}
+		else if(page->next == NULL && page->pn != key){
 			struct Page *newPage = (struct Page*) malloc(sizeof(struct Page));
 			newPage->pn = key;
 			newPage->addr = (int*) malloc(WORDSIZE * PSIZE);
@@ -70,13 +84,9 @@ void put(unsigned int address, unsigned int value) {
 			TOTAL_REFERENCE[TOTAL_INDEX++] = newPage->pn;
 			WINDOW_REFERENCE[WINDOW_INDEX++] = newPage->pn;
 		}
-		else{
-			int* addr = item->page->addr;
-			*(addr + offset) = value;
-			checkTotalReference(item->page->pn);
-			checkWindowReference(item->page->pn);
-		}
+
 	}
+
 	if(++COUNT % WINSIZE == 0) {
 		addToResult();
 		WINDOW_INDEX = 0;
@@ -91,6 +101,10 @@ unsigned int get(unsigned int address) {
 	unsigned int key = address/PSIZE;
 
 	struct HashItem* item = search(key);
+	struct Page *page = item->page;
+	while(page->pn != key && page->next != NULL){
+		page = page->next;
+	}
 
 	checkTotalReference(item->page->pn);
 	checkWindowReference(item->page->pn);
@@ -103,30 +117,46 @@ unsigned int get(unsigned int address) {
 	return *(item->page->addr + offset);
 }
 
-void done() {
+void done(char *sort) {
 	addToResult();
+
+	char message[100];
+	char FILENAME[100];
+	sprintf(FILENAME, "pSize%d,wSize%d,%s.csv",PSIZE, WINSIZE, sort);
+
+	FILE *file;
+
+	if((file = fopen(FILENAME, "a+"))){
+	 	//Do nothing
+	}
+	else{
+		file = fopen(FILENAME, "w+");
+	}
+
 	int i;
+	fprintf(file, "Page:%d\n", PSIZE);
+	fprintf(file, "Win:%d\n", WINSIZE);
 	for(i = 0; i < RESULT_SIZE; i++) {
 		if(RESULT[i] != -1) {
+			fprintf(file, "%d\n",RESULT[i]);
 			printf("Window %d has WSS: %d\n", i+1, RESULT[i]);
 		}
 	}
 
-
 	printf("Total page referenced: %d\n", TOTAL_INDEX);
-	printf("Average: %f\n", TOTAL_INDEX * 1.0 / (COUNT * 1.0));
-	printf("COUNT: %d\n", COUNT);
+	printf("Average: %f\n", TOTAL_INDEX * 1.0 / (RESULT_SIZE * 1.0));
+
+
 
 	free(WINDOW_REFERENCE);
 	free(TOTAL_REFERENCE);
 	free(RESULT);
 	for(i=0;i<SIZE;i++){
 		struct HashItem* item = search(i);
-		if(i != NULL){
+		if(item != NULL){
 			free(item);
 		}
 	}
-	//free(hashArray);
 	exit(0);
 }
 
@@ -153,6 +183,7 @@ void checkTotalReference(unsigned int key) {
 	free(TOTAL_REFERENCE);
 	TOTAL_REFERENCE = total;
 }
+
 
 void checkWindowReference(unsigned int key) {
 	int i;
