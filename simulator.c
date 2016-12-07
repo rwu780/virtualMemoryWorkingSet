@@ -1,48 +1,53 @@
 #include "simulator.h"
+
 #define SIZE 30
+#define WORDSIZE 4
+
 
 //Hash Array
 struct HashItem* hashArray[SIZE];
 
 //total reference
-int *TOTAL_REFERENCE;
-unsigned int TOTAL_SIZE;
-unsigned int TOTAL_INDEX;
+int *totalReferenced;
+unsigned int tSize;
+unsigned int tIndex;
 
-//Window set and reference
-int *WINDOW_REFERENCE;
-unsigned int WINSIZE;
-unsigned int WINDOW_INDEX;
+//record working set per window
+int *wsReference;
+unsigned int wSize;
+unsigned int wIndex;
 
 //record the number of working set for window
-int *RESULT;
-unsigned int RESULT_SIZE;
-unsigned int RESULT_INDEX;
+int *windowReference;
+unsigned int windowSize;
+unsigned int windowIndex;
 
-unsigned int PSIZE;
-unsigned int COUNT;
+unsigned int pageSize;
+unsigned int count;
 
 
-void init(int psize, int winsize) {
-	PSIZE = psize;
-	WINSIZE = winsize;
-	TOTAL_SIZE = WINSIZE;
+void init(int psize, int winSize) {
+	pageSize = psize;
+	//pass to global, so we can referenced later
+	wSize = (unsigned int)winSize;
+	tSize = wSize;
 
-	COUNT = 0;
-	RESULT_SIZE = SIZE;
+	count = 0;
+	windowSize = SIZE;
 	
-	WINDOW_INDEX = 0;
-	TOTAL_INDEX = 0;
-	RESULT_INDEX = 0;
+	wIndex = 0;
+	tIndex = 0;
+	windowIndex = 0;
 
-	resetReferenceArrays(WINSIZE, TOTAL_SIZE);
-	resetResultArray(RESULT_SIZE);
+	resetWsReference(wSize);
+	resetTotalReference(tSize);
+	resetResultArray(windowSize);
 }
 
 void put(unsigned int address, unsigned int value) {
-	unsigned int hex = PSIZE-1 + 0x00;
+	unsigned int hex = pageSize-1 + 0x00;
 	unsigned int offset = address & hex;
-	unsigned int key = address/PSIZE;
+	unsigned int key = address/pageSize;
 
 	struct HashItem* item = search(key);
 	/*
@@ -52,12 +57,12 @@ void put(unsigned int address, unsigned int value) {
 	if (item == NULL){
 		struct Page *page = (struct Page*) malloc(sizeof(struct Page));
 		page->pn = key;
-		page->addr = (int*) malloc(WORDSIZE * PSIZE);
+		page->addr = (int*) malloc(WORDSIZE * pageSize);
 		page->next = NULL;
 		*(page->addr + offset) = value;
 		insert(key, page);
-		TOTAL_REFERENCE[TOTAL_INDEX++] = page->pn;
-		WINDOW_REFERENCE[WINDOW_INDEX++] = page->pn;
+		totalReferenced[tIndex++] = page->pn;
+		wsReference[wIndex++] = page->pn;
 	}
 	
 	if(item != NULL){
@@ -72,33 +77,36 @@ void put(unsigned int address, unsigned int value) {
 			int* addr = item->page->addr;
 			*(addr + offset) = value;
 			checkTotalReference(page->pn);
-			checkWindowReference(page->pn);
+			checkWsReference(page->pn);
 		}
 		else if(page->next == NULL && page->pn != key){
 			struct Page *newPage = (struct Page*) malloc(sizeof(struct Page));
 			newPage->pn = key;
-			newPage->addr = (int*) malloc(WORDSIZE * PSIZE);
+			newPage->addr = (int*) malloc(WORDSIZE * pageSize);
 			newPage->next = NULL;
 			*(newPage->addr + offset) = value;
 			page->next = newPage;
-			TOTAL_REFERENCE[TOTAL_INDEX++] = newPage->pn;
-			WINDOW_REFERENCE[WINDOW_INDEX++] = newPage->pn;
+			totalReferenced[tIndex++] = newPage->pn;
+			wsReference[wIndex++] = newPage->pn;
 		}
 
 	}
 
-	if(++COUNT % WINSIZE == 0) {
+	if(++count % wSize == 0) {
 		addToResult();
-		WINDOW_INDEX = 0;
-		int i;
-		for(i = 0; i < WINSIZE; i++) WINDOW_REFERENCE[i] = -1;		
+		wIndex = 0;
+		free(wsReference);
+		resetWsReference(wSize);
+
+		//int i;
+		//for(i = 0; i < wSize; i++) wsReference[i] = -1;		
 	}
 }
 
 unsigned int get(unsigned int address) {
-	unsigned int hex = PSIZE-1 + 0x00;
+	unsigned int hex = pageSize-1 + 0x00;
 	unsigned int offset = address & hex;
-	unsigned int key = address/PSIZE;
+	unsigned int key = address/pageSize;
 
 	struct HashItem* item = search(key);
 	struct Page *page = item->page;
@@ -107,50 +115,37 @@ unsigned int get(unsigned int address) {
 	}
 
 	checkTotalReference(item->page->pn);
-	checkWindowReference(item->page->pn);
-	if(++COUNT % WINSIZE == 0) {
+	checkWsReference(item->page->pn);
+	if(++count % wSize == 0) {
 		addToResult();
-		WINDOW_INDEX = 0;
-		int i;
-		for(i = 0; i < WINSIZE; i++) WINDOW_REFERENCE[i] = -1;		
+		wIndex = 0;
+		free(wsReference);
+		resetWsReference(wSize);
+
+		// int i;
+		// for(i = 0; i < wSize; i++) wsReference[i] = -1;		
 	}
 	return *(item->page->addr + offset);
 }
 
-void done(char *sort) {
+void done() {
 	addToResult();
 
-	char message[100];
-	char FILENAME[100];
-	sprintf(FILENAME, "pSize%d,wSize%d,%s.csv",PSIZE, WINSIZE, sort);
-
-	FILE *file;
-
-	if((file = fopen(FILENAME, "a+"))){
-	 	//Do nothing
-	}
-	else{
-		file = fopen(FILENAME, "w+");
-	}
-
 	int i;
-	fprintf(file, "Page:%d\n", PSIZE);
-	fprintf(file, "Win:%d\n", WINSIZE);
-	for(i = 0; i < RESULT_SIZE; i++) {
-		if(RESULT[i] != -1) {
-			fprintf(file, "%d\n",RESULT[i]);
-			printf("Window %d has WSS: %d\n", i+1, RESULT[i]);
+	for(i = 0; i < windowSize; i++) {
+		if(windowReference[i] != -1) {
+			printf("Window %d has WSS: %d\n", i+1, windowReference[i]);
 		}
 	}
 
-	printf("Total page referenced: %d\n", TOTAL_INDEX);
-	printf("Average: %f\n", TOTAL_INDEX * 1.0 / (RESULT_SIZE * 1.0));
+	printf("Total page referenced: %d\n", tIndex);
+	printf("Average: %f\n", tIndex * 1.0 / (windowSize * 1.0));
 
 
 
-	free(WINDOW_REFERENCE);
-	free(TOTAL_REFERENCE);
-	free(RESULT);
+	free(wsReference);
+	free(totalReferenced);
+	free(windowReference);
 	for(i=0;i<SIZE;i++){
 		struct HashItem* item = search(i);
 		if(item != NULL){
@@ -162,57 +157,57 @@ void done(char *sort) {
 
 void checkTotalReference(unsigned int key) {
 	int i;
-	for(i = 0; i < TOTAL_SIZE; i++) {
-		if(TOTAL_REFERENCE[i] == key) {
+	for(i = 0; i < tSize; i++) {
+		if(totalReferenced[i] == key) {
 			return;
-		} else if (TOTAL_REFERENCE[i] == -1) {
-			TOTAL_REFERENCE[i] = key;
-			TOTAL_INDEX++;
+		} else if (totalReferenced[i] == -1) {
+			totalReferenced[i] = key;
+			tIndex++;
 			return;
 		}
 	}
-	TOTAL_SIZE *= 2;
-	int *total = (int*) malloc(sizeof(int) * TOTAL_SIZE);
-	for(i = 0; i < TOTAL_SIZE; i++) {
-		if(i >= TOTAL_INDEX) {
+	tSize *= 2;
+	int *total = (int*) malloc(sizeof(int) * tSize);
+	for(i = 0; i < tSize; i++) {
+		if(i >= tIndex) {
 			total[i] = -1;
 		} else {
-			total[i] = TOTAL_REFERENCE[i];
+			total[i] = totalReferenced[i];
 		}
 	}
-	free(TOTAL_REFERENCE);
-	TOTAL_REFERENCE = total;
+	free(totalReferenced);
+	totalReferenced = total;
 }
 
 
-void checkWindowReference(unsigned int key) {
+void checkWsReference(unsigned int key) {
 	int i;
-	for(i = 0; i < TOTAL_SIZE; i++) {
-		if(WINDOW_REFERENCE[i] == key) {
+	for(i = 0; i < tSize; i++) {
+		if(wsReference[i] == key) {
 			return;
-		} else if (WINDOW_REFERENCE[i] == -1) {
-			WINDOW_REFERENCE[i] = key;
-			WINDOW_INDEX++;
+		} else if (wsReference[i] == -1) {
+			wsReference[i] = key;
+			wIndex++;
 			return;
 		}
 	}
 }
 
 void addToResult(){
-	if(RESULT_INDEX == RESULT_SIZE) {
-		RESULT_SIZE *= 2;
-		unsigned int *result = (unsigned int*) malloc(sizeof(unsigned int) * RESULT_SIZE);
+	if(windowIndex == windowSize) {
+		windowSize *= 2;
+		unsigned int *newResult = (unsigned int*) malloc(sizeof(unsigned int) * windowSize);
 		int i;
-		for(i = 0; i < RESULT_SIZE; i++) {
-			if(i >= RESULT_INDEX) {
-				result[i] = -1;
+		for(i = 0; i < windowSize; i++) {
+			if(i >= windowIndex) {
+				newResult[i] = -1;
 			} else {
-				result[i] = RESULT[i];
+				newResult[i] = windowReference[i];
 			}
 		}
-		RESULT = result;
+		windowReference = newResult;
 	}
-	RESULT[RESULT_INDEX++] = WINDOW_INDEX;
+	windowReference[windowIndex++] = wIndex;
 }
 
 
@@ -232,20 +227,25 @@ void insert(unsigned int key, struct Page* page) {
 	hashArray[hashIndex] = item;
 }
 
-void resetReferenceArrays(int winsize, int totalSize){
-	WINDOW_REFERENCE = (int*) malloc(sizeof(int) * winsize);
-	TOTAL_REFERENCE = (int*) malloc(sizeof(int) * totalSize);
-
+void resetWsReference(int wSize){
+	wsReference = (int*) malloc(sizeof(int) * wSize);
 	int i;
-	for(i = 0; i<winsize; i++){
-		WINDOW_REFERENCE[i] = -1;
-		TOTAL_REFERENCE[i] = -1;
-	}
+	for(i = 0; i<wSize; i++){
+		wsReference[i] = -1;
+	}	
 }
-void resetResultArray(int resultSize){
-	RESULT = (unsigned int*) malloc(sizeof(unsigned int) * resultSize);
+void resetTotalReference(int totalSize){
+	totalReferenced = (int*) malloc(sizeof(int) * totalSize);
 	int i;
-	for(i = 0; i<resultSize; i++){
-		RESULT[i] = -1;
+	for(i = 0; i<totalSize; i++){
+		totalReferenced[i] = -1;
+	}
+
+}
+void resetResultArray(int windowSize){
+	windowReference = (unsigned int*) malloc(sizeof(unsigned int) * windowSize);
+	int i;
+	for(i = 0; i<windowSize; i++){
+		windowReference[i] = -1;
 	}
 }

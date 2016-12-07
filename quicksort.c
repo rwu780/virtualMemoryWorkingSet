@@ -32,7 +32,7 @@ void process(){
 
 	quicksort(0, SIZE-1);
 	
-	done("quicksort");
+	done();
 }
 
 void quicksort(int begin, int end){

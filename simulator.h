@@ -1,15 +1,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define SIZE 30
-#define WORDSIZE 4
-
+/*Link list for hash table items*/
 struct Page {
 	unsigned int pn;
 	int *addr;
 	struct Page *next;
 };
 
+/*Hash table item*/
 struct HashItem {
 	struct Page *page;
 };
@@ -30,10 +29,13 @@ void done();
 
 void checkTotalReference(unsigned int key);
 
-void checkWindowReference(unsigned int key);
+void checkWsReference(unsigned int key);
 
 void addToResult();
 
-void resetReferenceArrays(int winsize, int totalSize);
+void resetWsReference(int wSize);
+void resetTotalReference(int totalSize);
 void resetResultArray(int resultSize);
+
+
 

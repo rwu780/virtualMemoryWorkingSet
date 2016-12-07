@@ -26,7 +26,7 @@ void process(){
         put(i,ran);
     }
     heap_sort(SIZE);
-    done("heapsort");
+    done();
 }
 
 void swap(int index1, int index2){
